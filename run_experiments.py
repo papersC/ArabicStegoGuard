@@ -40,15 +40,25 @@ def evaluate(m, R, thr):
     out['AUROC_CI'] = boot_auc(sc, y, src)
     out['TPR_by_method'] = {a: float((sc[np.array([r['method'] == a for r in R])] >= thr).mean()) for a in METHODS}
     return out, sc
+import ast, os
+DONE = {}
+if '--resume' in sys.argv and os.path.exists('results/run_log.txt'):
+    for ln in open('results/run_log.txt'):
+        p = ln.split(' ', 3)
+        if p[0] == 'E1': DONE[('E1', p[1])] = ast.literal_eval(ln.split(' ', 2)[2].replace('np.float64', ''))
+        if p[0] == 'E2': DONE[('E2', p[1], p[2])] = ast.literal_eval(p[3])
+        if p[0] == 'loc': DONE['loc'] = ast.literal_eval(ln[4:])
 res = {'counts': {k: {'n': len(v), 'stego': int(Y(v).sum())} for k, v in S.items()}}
 # ---------- E1: source-disjoint, all families seen ----------
 res['E1'] = {}; trained = {}
 for nm in NAMES:
+    if ('E1', nm) in DONE and nm not in ('B1-Rules', 'B2-CodepointNgramLR', 'B6-ArabicStegoGuard'):
+        res['E1'][nm] = DONE[('E1', nm)]; continue
     t0 = time.time(); m = fit(make(nm), S['train'])
     thr = thr_at_fpr(m.score(X(S['val'])), Y(S['val']))
     r, sc = evaluate(m, S['test'], thr); r['train_s'] = time.time() - t0
     t1 = time.time(); m.score(X(S['test'])); r['ms_per_doc'] = 1000 * (time.time() - t1) / len(S['test'])
-    res['E1'][nm] = r; trained[nm] = (m, thr); print('E1', nm, {k: v for k, v in r.items() if k != 'TPR_by_method'}, flush=True)
+    res['E1'][nm] = r; trained[nm] = (m, thr); print('E1' if '--resume' not in sys.argv else 'E1re', nm, {k: v for k, v in r.items() if k != 'TPR_by_method'}, flush=True)
 # localization for B6
 m, _ = trained['B6-ArabicStegoGuard']; T = [r for r in S['test'] if r['label'] == 1]
 _, loc = m.logits(X(T)); tp = fp = fn = 0
@@ -62,6 +72,7 @@ res['E2'] = {}
 for nm in ['B1-Rules', 'B2-CodepointNgramLR', 'B3-RawCharCNN', 'B6-ArabicStegoGuard']:
     res['E2'][nm] = {}
     for a in METHODS:
+        if ('E2', nm, a) in DONE: res['E2'][nm][a] = DONE[('E2', nm, a)]; continue
         keep = lambda R: [r for r in R if r['method'] != a]
         tr = keep(S['train']); va = keep(S['val'])
         m = make(nm)

@@ -10,11 +10,11 @@ for k, v in R['E1'].items():
     L.append(r'%s & %.4f [%.4f, %.4f] & %.4f & %s & %s & %s & %s & %s & %s & %.2f \\' % (k, v['AUROC'], lo, hi, v['AUPRC'], f1(v['TPR']), f1(v['FPR']), f1(v['FPR_hardneg']), f1(v['FPR_clean']), f3(v.get('ECE')), f3(v.get('Brier')), v['ms_per_doc']))
 L += [r'\bottomrule', r'\end{tabular}', r'\end{table*}', '']
 L += [r'\begin{table}[!t]', r'\caption{E2 leave-one-embedding-family-out: AUROC / TPR (\%) on the unseen family at the validation threshold (FPR$\le$1\%).}', r'\label{tab:e2}', r'\centering\footnotesize', r'\setlength{\tabcolsep}{3pt}',
-      r'\begin{tabular}{@{}lcccc@{}}', r'\toprule', r'Detector & ZW1 & KHN & KSH & PSP \\', r'\midrule']
+      r'\resizebox{\columnwidth}{!}{\begin{tabular}{@{}lcccc@{}}', r'\toprule', r'Detector & ZW1 & KHN & KSH & PSP \\', r'\midrule']
 for k, v in R['E2'].items():
     L.append(k + ' & ' + ' & '.join('%.3f / %s' % (v[a]['AUROC'], f1(v[a]['TPR'])) for a in M) + r' \\')
-L += [r'\bottomrule', r'\end{tabular}', r'\end{table}', '']
-L += [r'\begin{table}[!t]', r'\caption{Payload survival rate PSR (\%, Eq.~(\ref{eq:psr})) per transformation, and TPR (\%) on surviving payloads / FPR (\%) of detectors trained on untransformed data.}', r'\label{tab:e4}', r'\centering\footnotesize', r'\setlength{\tabcolsep}{2.5pt}',
+L += [r'\bottomrule', r'\end{tabular}}', r'\end{table}', '']
+L += [r'\begin{table}[!t]', r'\caption{Payload survival rate PSR (\%, Eq.~(\ref{eq:psr})) per transformation, and TPR (\%) on surviving payloads / FPR (\%) of detectors trained on untransformed data; documents whose payload was destroyed count as negatives.}', r'\label{tab:e4}', r'\centering\footnotesize', r'\setlength{\tabcolsep}{2.5pt}',
       r'\begin{tabular}{@{}lccccccc@{}}', r'\toprule', r'Transform & ZW1 & KHN & KSH & PSP & B1 & B2 & B6 \\', r'\midrule']
 for t, p in R['PSR'].items():
     e = R['E4'][t]

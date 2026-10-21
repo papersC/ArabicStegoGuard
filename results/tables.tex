@@ -1,0 +1,54 @@
+\begin{table*}[!t]
+\caption{E1 (source-disjoint, all families seen) on the test partition. Threshold fixed on validation at FPR$\le$1\%. TPR/FPR in \%. AUROC 95\% CI: source-cluster bootstrap (300 resamples).}
+\label{tab:e1}
+\centering\footnotesize
+\begin{tabular}{@{}lccccccccc@{}}
+\toprule
+Detector & AUROC [95\% CI] & AUPRC & TPR & FPR & FPR$_{\text{hard-neg}}$ & FPR$_{\text{clean}}$ & ECE & Brier & ms/doc \\
+\midrule
+B1-Rules & 0.9988 [0.9977, 0.9996] & 0.9980 & 98.9 & 1.6 & 3.1 & 0.8 & -- & -- & 0.02 \\
+B2-CodepointNgramLR & 0.9999 [0.9996, 1.0000] & 0.9998 & 100.0 & 0.8 & 1.3 & 0.6 & -- & -- & 0.26 \\
+B4-LanguageOnlyLR & 0.5239 [0.4976, 0.5525] & 0.4123 & 0.8 & 1.1 & 1.9 & 0.8 & -- & -- & 0.12 \\
+B3-RawCharCNN & 1.0000 [0.9999, 1.0000] & 0.9999 & 99.8 & 0.5 & 0.9 & 0.3 & 0.004 & 0.003 & 1.72 \\
+B5-ConcatFusion & 1.0000 [0.9999, 1.0000] & 0.9999 & 99.8 & 0.4 & 0.9 & 0.2 & 0.005 & 0.003 & 3.28 \\
+B6-ASG-noLoc & 1.0000 [1.0000, 1.0000] & 1.0000 & 100.0 & 0.5 & 1.3 & 0.2 & 0.007 & 0.003 & 3.34 \\
+B6-ArabicStegoGuard & 1.0000 [0.9999, 1.0000] & 1.0000 & 99.5 & 0.1 & 0.3 & 0.0 & 0.008 & 0.003 & 3.62 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\begin{table}[!t]
+\caption{E2 leave-one-embedding-family-out: AUROC / TPR (\%) on the unseen family at the validation threshold (FPR$\le$1\%).}
+\label{tab:e2}
+\centering\footnotesize
+\setlength{\tabcolsep}{3pt}
+\resizebox{\columnwidth}{!}{\begin{tabular}{@{}lcccc@{}}
+\toprule
+Detector & ZW1 & KHN & KSH & PSP \\
+\midrule
+B1-Rules & 1.000 / 100.0 & 0.999 / 100.0 & 0.998 / 98.8 & 0.998 / 96.6 \\
+B2-CodepointNgramLR & 1.000 / 100.0 & 0.994 / 90.3 & 0.470 / 0.6 & 0.478 / 0.7 \\
+B3-RawCharCNN & 1.000 / 100.0 & 0.998 / 83.4 & 0.660 / 0.6 & 0.961 / 2.0 \\
+B6-ArabicStegoGuard & 1.000 / 100.0 & 1.000 / 100.0 & 0.579 / 0.0 & 0.857 / 0.7 \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+\begin{table}[!t]
+\caption{Payload survival rate PSR (\%, Eq.~(\ref{eq:psr})) per transformation, and TPR (\%) on surviving payloads / FPR (\%) of detectors trained on untransformed data; documents whose payload was destroyed count as negatives.}
+\label{tab:e4}
+\centering\footnotesize
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{@{}lccccccc@{}}
+\toprule
+Transform & ZW1 & KHN & KSH & PSP & B1 & B2 & B6 \\
+\midrule
+identity & 100.0 & 100.0 & 100.0 & 100.0 & 98.9/1.6 & 100.0/0.8 & 99.5/0.1 \\
+NFC & 100.0 & 100.0 & 100.0 & 100.0 & 98.9/1.6 & 100.0/0.8 & 99.5/0.1 \\
+NFKC & 100.0 & 100.0 & 100.0 & 0.0 & 99.6/1.4 & 100.0/0.8 & 99.4/0.2 \\
+strip\_Cf & 0.0 & 0.0 & 100.0 & 100.0 & 97.8/1.1 & 100.0/0.6 & 99.1/0.1 \\
+ws\_collapse & 100.0 & 100.0 & 100.0 & 0.0 & 99.6/1.4 & 100.0/0.8 & 99.4/0.2 \\
+strip\_tatweel & 100.0 & 100.0 & 0.0 & 100.0 & 98.9/0.1 & 100.0/0.2 & 100.0/0.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
