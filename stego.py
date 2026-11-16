@@ -108,3 +108,75 @@ TRANSFORMS = {
     'ws_collapse': lambda s: re.sub(r'[\s\u00A0\u2000-\u200A]+', ' ', s),
     'strip_tatweel': lambda s: s.replace(TATWEEL, ''),
 }
+
+# ---- Expanded curated benign patterns (best-effort; not linguist-annotated) ----
+SOFT_HYPHEN = '\u00AD'
+ZWSP_LOCAL = ZWSP
+
+def hard_negative_expanded(t, rng):
+    """Broader surrogate legitimate Unicode uses for FP evaluation.
+    Documented as curated best-effort, not Arabic-specialist reviewed."""
+    kind = rng.choice([
+        'zwnj_compound', 'decor_tatweel', 'bidi_marks', 'nbsp_numbers',
+        'soft_hyphen', 'zwj_ligature_hint', 'mixed_script_bidi',
+        'multi_tatweel', 'thin_nbsp_mix', 'rlm_quote'
+    ])
+    words = t.split(' ')
+    if kind in ('zwnj_compound', 'decor_tatweel', 'bidi_marks', 'nbsp_numbers'):
+        return hard_negative(t, rng)[0], kind
+    if kind == 'soft_hyphen':
+        for j in rng.sample(range(len(words)), k=min(3, len(words))):
+            w = words[j]
+            if len(w) > 4:
+                words[j] = w[:len(w)//2] + SOFT_HYPHEN + w[len(w)//2:]
+        return ' '.join(words), kind
+    if kind == 'zwj_ligature_hint':
+        # ZWJ between Arabic letters as sometimes used for presentation control
+        for j in rng.sample(range(len(words)), k=min(2, len(words))):
+            w = words[j]
+            if len(w) > 3 and AR.match(w[1]) and AR.match(w[2]):
+                words[j] = w[:2] + ZWJ + w[2:]
+        return ' '.join(words), kind
+    if kind == 'mixed_script_bidi':
+        s = re.sub(r'([A-Za-z]+)', '\u202B\\1\u202C', t)  # RLE/PDF around Latin
+        if s == t:
+            s = '\u200F' + t + ' (OK)'
+        return s, kind
+    if kind == 'multi_tatweel':
+        for j in rng.sample(range(len(words)), k=min(3, len(words))):
+            w = words[j]
+            if len(w) > 3 and AR.match(w[0]) and w[0] not in NONJOIN and AR.match(w[1]):
+                words[j] = w[0] + TATWEEL * rng.randint(2, 5) + w[1:]
+        return ' '.join(words), kind
+    if kind == 'thin_nbsp_mix':
+        s = t.replace(' ', THIN, 1) if ' ' in t else t + THIN
+        s = re.sub(r'(\d)', '\\1\u00A0', s, count=2)
+        return s, kind
+    # rlm_quote
+    return '\u200F«' + t[:80] + '»\u200F' + t[80:], 'rlm_quote'
+
+
+def anomaly_features(x):
+    """Family-agnostic Unicode anomaly features for open-set remedies."""
+    n = max(1, len(x))
+    cf = sum(1 for ch in x if unicodedata.category(ch) == 'Cf')
+    tat = x.count(TATWEEL)
+    thin = x.count(THIN)
+    nbsp = x.count('\u00A0')
+    spaces = sum(1 for ch in x if ch.isspace() or ch in (THIN, '\u00A0'))
+    join_opp = max(1, len(kashida_positions(x.replace(TATWEEL, ''))))
+    # space-type entropy proxy
+    space_types = [ch for ch in x if ch in (' ', THIN, '\u00A0', '\u2000', '\u2001', '\u2002', '\u2003')]
+    from collections import Counter
+    c = Counter(space_types)
+    tot = sum(c.values()) or 1
+    ent = -sum((v/tot) * __import__('math').log(v/tot + 1e-12) for v in c.values())
+    return [
+        cf / n * 100,
+        tat / n * 100,
+        tat / join_opp,
+        thin / max(1, spaces),
+        nbsp / n * 100,
+        ent,
+        sum(1 for ch in x if ch in INVIS) / n * 100,
+    ]

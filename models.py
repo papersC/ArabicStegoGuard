@@ -94,11 +94,12 @@ class Neural:
         self.mode, self.epochs, self.lam, self.seed = mode, epochs, lam_loc, seed
     def fit(self, X, y, offsets=None):
         torch.manual_seed(self.seed); np.random.seed(self.seed)
-        C, K, D, L, M = encode(X, offsets if offsets is not None else [[]] * len(X)); CL = aligned_ling_ids(X)
+        C, K, D, L, M = encode(X, offsets if offsets is not None else [[]] * len(X))
+        CL = aligned_ling_ids(X) if self.mode != 'raw' else torch.zeros_like(C)
         y = torch.tensor(y, dtype=torch.float32); self.net = Net(self.mode)
         opt = torch.optim.Adam(self.net.parameters(), 2e-3); bce = nn.BCEWithLogitsLoss(reduction='none')
         for ep in range(self.epochs):
-            perm = torch.randperm(len(X)); self.net.train()
+            perm = torch.randperm(len(X)); self.net.train(); tot = 0.0; n = 0
             for b in range(0, len(X), 64):
                 idx = perm[b:b+64]
                 pd_, pl = self.net(C[idx], K[idx], D[idx], M[idx], CL[idx])
@@ -106,7 +107,8 @@ class Neural:
                 if self.mode != 'raw' and self.lam > 0 and offsets is not None:
                     lm = bce(pl, L[idx]) * M[idx]; pw = 1 + 20 * L[idx]
                     loss = loss + self.lam * (lm * pw).sum() / M[idx].sum()
-                opt.zero_grad(); loss.backward(); opt.step()
+                opt.zero_grad(); loss.backward(); opt.step(); tot += float(loss.detach()); n += 1
+            print(f'  [{self.mode} seed={self.seed}] epoch {ep+1}/{self.epochs} loss={tot/max(1,n):.4f}', flush=True)
         self.T = 1.0; return self
     def logits(self, X):
         C, K, D, L, M = encode(X); CL = aligned_ling_ids(X); self.net.eval(); outs, locs = [], []
